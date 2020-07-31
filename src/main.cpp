@@ -7,6 +7,8 @@
 //#include <Mcu.h>
 #include "gsm.h"
 #include "gps.h"
+#include "compass.h"
+#include "gyro.h"
 
 
 #define RST   14   // GPIO14 -- SX1278's RESET
@@ -29,14 +31,20 @@ void setup() {
 	Serial.printf("%08X\n",(uint32_t)chipid);//print Low 4bytes.
 
   //configure the SPI port and I/O for Lora network use
-  SPI.begin(SCK,MISO,MOSI,SS);
+  //SPI.begin(SCK,MISO,MOSI,SS);
   //Mcu.begin(SS,RST,DIO0,DIO1,LICENSE);
 
   //configure the I2C
-  Wire.begin();
+  //Wire.begin();
 
   //configure the GSM modem
-  gps_setup();
+  //gps_setup();
+
+  //compass setup
+  comapass_setup();
+
+  //gyro setup
+  //gyro_Setup();
 
   //start the LoRa network interface
   //LoRa.DeviceStateInit(CLASS_A);
@@ -49,5 +57,7 @@ void setup() {
 
 void loop() {
 
-  gps_loop();
+  //gps_loop();
+  compass_loop();
+  //gyro_loop();
 }

@@ -5,7 +5,8 @@
 
 //#define ss Serial2
 
-SoftwareSerial ss;
+//SoftwareSerial ss;
+#define ss Serial2
 
 static const uint32_t GPSBaud = 9600;
 static const int MAX_SATELLITES = 40;
@@ -22,15 +23,20 @@ struct
 
 void gps_setup()
 {
-  //pinMode(4, INPUT);
-  ss.begin(9600, SWSERIAL_8N1, 4, 15, false, 256);
-  
-  Serial.print("Testing TinyGPS library v. "); Serial.println(TinyGPS::library_version());
-  Serial.println("by Mikal Hart");
-  Serial.println();
+  //pinMode(32,INPUT);
+  //digitalWrite(15,LOW);
+
+  ss.begin(9600); //, SWSERIAL_8N1, 39, 1, false, 256);
+  //Serial.print("Testing TinyGPS library v. "); 
+  //Serial.println(TinyGPS::library_version());
+  //Serial.println("by Mikal Hart");
+  //Serial.println();
   Serial.println("Sats HDOP Latitude  Longitude  Fix  Date       Time     Date Alt    Course Speed Card  Distance Course Card  Chars Sentences Checksum");
   Serial.println("          (deg)     (deg)      Age                      Age  (m)    --- from GPS ----  ---- to London  ----  RX    RX        Fail");
   Serial.println("-------------------------------------------------------------------------------------------------------------------------------------");
+  delay(1000);
+  
+  
 }
 
 void gps_loop()
@@ -58,9 +64,9 @@ void gps_loop()
   gps.stats(&chars, &sentences, &failed);
   print_int(chars, 0xFFFFFFFF, 6);
   print_int(sentences, 0xFFFFFFFF, 10);
-  print_int(failed, 0xFFFFFFFF, 9);
+  print_int(failed, 0xFFFFFFFF, 9); 
   Serial.print("\r");
-  
+  //delay(1000);
   smartdelay(1000);
 }
 
@@ -70,7 +76,8 @@ void smartdelay(unsigned long ms)
   do 
   {
     while (ss.available())
-      gps.encode(ss.read());
+      if(gps.encode(ss.read())==false)
+        Serial.print("\r gps error");
   } while (millis() - start < ms);
 }
 
