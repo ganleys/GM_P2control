@@ -4,8 +4,14 @@
 *   sarray.h
 */
 
-#define SBserial Serial2
+#ifndef SARRAY_H
+#define SARRAY_H
+
+//#define SBserial Serial2
 #define SLAVE_ARRAY_SZ  sizeof(uint8_t)
+
+#define SBRX 39
+#define SBTX 4
 
 #define CELL_FRAME_SZ	8
 #define ARRAY_TIMEOUT   1000
@@ -60,11 +66,9 @@ typedef struct{
 	uint8_t na:3;
 }CELL_STATUS;
 
-CELL slave_array[SLAVE_ARRAY_SZ];
-uint8_t tx_array[CELL_FRAME_SZ];
-uint8_t rx_array[CELL_FRAME_SZ];
-uint8_t slave_count;
 
 void sarray_Setup(void);
 void sarray_loop(void);
 int8_t sarray_scan(void);
+
+#endif //SARRAY_H

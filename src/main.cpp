@@ -5,10 +5,11 @@
 #include <wire.h>
 #include <SPI.h>
 //#include <Mcu.h>
-#include "gsm.h"
-#include "gps.h"
-#include "compass.h"
-#include "gyro.h"
+//#include "gsm.h"
+//#include "gps.h"
+//#include "compass.h"
+//#include "gyro.h"
+#include "sarray.h"
 
 
 #define RST   14   // GPIO14 -- SX1278's RESET
@@ -41,10 +42,13 @@ void setup() {
   //gps_setup();
 
   //compass setup
-  comapass_setup();
+  //comapass_setup();
 
   //gyro setup
   //gyro_Setup();
+
+  //scan for solar cells in the arry
+  sarray_Setup();
 
   //start the LoRa network interface
   //LoRa.DeviceStateInit(CLASS_A);
@@ -58,6 +62,7 @@ void setup() {
 void loop() {
 
   //gps_loop();
-  compass_loop();
+  //compass_loop();
   //gyro_loop();
+  sarray_loop();
 }
