@@ -19,7 +19,7 @@ void sarray_Setup(){
 
     //start the serial bus interface
     //SBserial.begin(9600);
-    SBserial.begin(2400, SWSERIAL_8N1, SBRX, SBTX);
+    SBserial.begin(9600, SWSERIAL_8N1, SBRX, SBTX);
     pinMode(SBTX,PULLUP);
 
     //clear the array and reset the number of slaves
@@ -51,7 +51,7 @@ int8_t sarray_scan(){
     memset(tx_array,0,sizeof(tx_array));
 
     for(uint8_t i = 0; i < 250; i++){     //SLAVE_ARRAY_SZ
-        tx_array[HOST_ADDRESS_BYTE] = 1;
+        tx_array[HOST_ADDRESS_BYTE] = i;
         tx_array[HOST_REGISTER_BYTE] = 0;
         Serial.print("Scanning slave ");Serial.print(i);
         SBserial.write(tx_array,CELL_FRAME_SZ);
