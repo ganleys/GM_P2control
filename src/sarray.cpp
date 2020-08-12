@@ -88,7 +88,7 @@ int8_t sarray_scan(){
 
 
     //scan the array
-    for(uint8_t i = 0; i < SLAVE_ARRAY_SZ; i++){     //SLAVE_ARRAY_SZ
+    for(uint8_t i = 0; i < 2; i++){     //SLAVE_ARRAY_SZ
         memset(tx_array,0,sizeof(tx_array));
 
         //send request to a slave
@@ -97,7 +97,7 @@ int8_t sarray_scan(){
         Serial.print("Scanning slave ");Serial.print(i);
         SBserial.write(tx_array,CELL_FRAME_SZ);
         //SBserial.setTimeout(ARRAY_TIMEOUT);
-
+        delay(1000);
         //read the return message
         len = SBserial.readBytes(rx_array,CELL_FRAME_SZ);
         
@@ -110,7 +110,7 @@ int8_t sarray_scan(){
             Serial.println(len);
         }
 
-        delay(2000);
+        delay(1000);
     }
     return len;
 }
