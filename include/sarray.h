@@ -7,15 +7,16 @@
 #ifndef SARRAY_H
 #define SARRAY_H
 
-#define SAARY_TASK_DELAY	portTICK_PERIOD_MS*5000
+#define SAARY_TASK_DELAY	portTICK_PERIOD_MS*3000
 
 //#define SBserial Serial2
 #define SLAVE_ARRAY_SZ  16	//maximum number of slave devices in the array
 
-#define SBRX 39
+#define SBRX 15
 #define SBTX 4
 
 #define CELL_FRAME_SZ	8
+#define TX_CELL_FRAME_SZ	8
 #define ARRAY_TIMEOUT   1000	// 1second time out
 
 typedef struct {
@@ -44,10 +45,10 @@ enum{
 };
 
 enum{
-	HOST_ADDRESS_BYTE = 0,
-	HOST_REGISTER_BYTE = 2,
-	HOST_PARAM_BYTE = 3,
-	HOST_CSUM_BYTE = 7
+	HOST_ADDRESS_BYTE 	= 0,
+	HOST_REGISTER_BYTE	= 2,
+	HOST_PARAM_BYTE 	= 3,
+	HOST_CSUM_BYTE 		= 7
 };
 
 enum{
@@ -60,6 +61,7 @@ enum{
 enum{
 	MSG_OK = 0,
 	MSG_BAD_SZ = -2,
+	MSG_BAD_RESPONSE = -3,
 	MSG_ERROR = -1
 };
 
@@ -72,7 +74,8 @@ enum{
 	led_thresh,
 	device_addr,
 	voltage_output_on,
-	voltage_boost_on
+	voltage_boost_on,
+	temp_reg = 16
 };
 
 typedef struct{
@@ -90,5 +93,6 @@ int8_t sarray_scan(void);
 int8_t saary_slv_status_get(uint8_t address,  uint8_t *param);
 int8_t saary_slv_param_get(uint8_t address, uint8_t reg, uint16_t *param);
 uint8_t sarry_calc_checksum(uint8_t *array);
+uint32_t meas_temp_calc( uint32_t inval);
 
 #endif //SARRAY_H
