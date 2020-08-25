@@ -55,6 +55,7 @@ void sarray_loop(){
             }else{
                 Serial.print("Solar V Error ");Serial.println(err);
             }
+            delay(1000);
 
             err = saary_slv_param_get(slave_array[slave_update_count].address, voltage_reg , &slave_array[slave_update_count].scap);
             if(err == MSG_OK){
@@ -62,6 +63,7 @@ void sarray_loop(){
             }else{
                 Serial.print("Scap V Error ");Serial.println(err);
             }      
+            delay(1000);
 
             err = saary_slv_param_get(slave_array[slave_update_count].address, battery_reg , &slave_array[slave_update_count].battery);
             if(err == MSG_OK){
@@ -69,7 +71,8 @@ void sarray_loop(){
             }else{
                 Serial.print("Scap V Error ");Serial.println(err);
             }             
-            
+            delay(1000);
+
             err = saary_slv_param_get(slave_array[slave_update_count].address, temp_reg , &slave_array[slave_update_count].temp);
             if(err == MSG_OK){
                 //slave_array[slave_update_count].temp = (uint16_t) meas_temp_calc( (uint32_t) slave_array[slave_update_count].temp);
@@ -82,6 +85,8 @@ void sarray_loop(){
             //increment the update counter
             if(++slave_update_count == slave_count)
                 slave_update_count = 0;
+
+            delay(1000);
         }
     }
     
@@ -101,6 +106,7 @@ void sarray_loop(){
 int8_t sarray_scan(){
     uint8_t len = 0;
     uint16_t loop_count = 0;
+    uint8_t sum;
     
     //clear the array and reset the number of slaves
     memset(slave_array,0,sizeof(slave_array));
@@ -115,13 +121,16 @@ int8_t sarray_scan(){
     //scan the array
     for(uint8_t i = 1; i < 7; i++){     //SLAVE_ARRAY_SZ
         memset(tx_array,0,sizeof(tx_array));
-
+        sum = 0;
         //send request to a slav
         tx_array[HOST_ADDRESS_BYTE] = i;
         tx_array[HOST_REGISTER_BYTE] = 0;
         tx_array[HOST_PARAM_BYTE] = 2;
         tx_array[HOST_PARAM_BYTE+1] = 3;
         tx_array[HOST_PARAM_BYTE+2] = 4;
+        for (int c = 0; c< 7; c++)
+            sum += tx_array[c];
+        tx_array[HOST_CSUM_BYTE] = 0xff - sum;     
         Serial.print("Scanning slave ");Serial.print(i);
         //SBserial.setTimeout(ARRAY_TIMEOUT);
         SBserial.write(tx_array,TX_CELL_FRAME_SZ);
