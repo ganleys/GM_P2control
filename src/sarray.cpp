@@ -83,10 +83,11 @@ void sarray_loop(){
             slave_array[slave_update_count].updated = true;
 
             //increment the update counter
-            if(++slave_update_count == slave_count)
+            if(++slave_update_count == slave_count){
                 slave_update_count = 0;
-
-            delay(1000);
+                //sarray_scan_now = 1;
+            }
+            //delay(1000);
         }
     }
     
@@ -95,6 +96,8 @@ void sarray_loop(){
         vTaskDelay(SAARY_TASK_DELAY); 
     //else  
     //    vTaskDelay(1000);    
+
+    
 
 }
 
@@ -111,20 +114,22 @@ int8_t sarray_scan(){
     //clear the array and reset the number of slaves
     memset(slave_array,0,sizeof(slave_array));
 
+
     if(slave_count > 0){
         
-    }
+    
     slave_count = 0;
+    }
     slave_update_count = 0;
-
+    
 
     //scan the array
-    for(uint8_t i = 1; i < 7; i++){     //SLAVE_ARRAY_SZ
+    for(uint8_t i = 0; i < 8; i++){     //SLAVE_ARRAY_SZ
         memset(tx_array,0,sizeof(tx_array));
         sum = 0;
         //send request to a slav
         tx_array[HOST_ADDRESS_BYTE] = i;
-        tx_array[HOST_REGISTER_BYTE] = 0;
+        tx_array[HOST_REGISTER_BYTE] = 0;j
         tx_array[HOST_PARAM_BYTE] = 2;
         tx_array[HOST_PARAM_BYTE+1] = 3;
         tx_array[HOST_PARAM_BYTE+2] = 4;
@@ -137,7 +142,7 @@ int8_t sarray_scan(){
 
         loop_count = 0;
         do{
-            delay(1);
+            delay(10);
 
             if(SBserial.available() == 8){
             //read the return message
@@ -159,7 +164,7 @@ int8_t sarray_scan(){
         //check the returned message
         if(len == CELL_FRAME_SZ){
             if(rx_array[HOST_ADDRESS_BYTE]>250){
-                Serial.println(" not found!");            
+                Serial.println(" not found!");         
             }
             else{
                 slave_array[slave_count++].address = rx_array[HOST_ADDRESS_BYTE];
@@ -191,11 +196,14 @@ int8_t sarray_scan(){
 */
 int8_t saary_slv_param_get(uint8_t address, uint8_t reg, uint16_t *param){
 
-    uint8_t len, sum;
+    uint8_t len=0, sum =0;
 
     memset(tx_array,0,sizeof(tx_array));
     tx_array[HOST_ADDRESS_BYTE] = address;
     tx_array[HOST_REGISTER_BYTE] = reg;
+    for (int c = 0; c< 7; c++)
+        sum += tx_array[c];
+    tx_array[HOST_CSUM_BYTE] = 0xff - sum; 
     
     SBserial.write(tx_array,TX_CELL_FRAME_SZ);
     delay(10);
@@ -256,11 +264,12 @@ uint8_t sarry_calc_checksum(uint8_t *array){
 
     uint8_t sum =0;
 
-    for(int i=0; i < (CELL_FRAME_SZ-1); i++){
+    for(int i=0; i < (HOST_CSUM_BYTE); i++){
         sum += *(array+i);
     }
 
     sum = 0xff - sum;
+    //Serial.println(sum);
 
     return sum;
 }
