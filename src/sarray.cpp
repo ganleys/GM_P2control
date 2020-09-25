@@ -6,6 +6,7 @@
 #include <Arduino.h>
 #include "sarray.h"
 #include <SoftwareSerial.h>
+#include <ArduinoJson.h>
 
 SoftwareSerial SBserial;
 
@@ -15,6 +16,8 @@ uint8_t rx_array[CELL_FRAME_SZ];
 uint8_t slave_count;
 uint8_t slave_update_count = 0;
 uint8_t sarray_scan_now;
+
+StaticJsonDocument<200> tstr; 
 
 
 void sarray_Setup(){
@@ -129,7 +132,7 @@ int8_t sarray_scan(){
         sum = 0;
         //send request to a slav
         tx_array[HOST_ADDRESS_BYTE] = i;
-        tx_array[HOST_REGISTER_BYTE] = 0;j
+        tx_array[HOST_REGISTER_BYTE] = 0;
         tx_array[HOST_PARAM_BYTE] = 2;
         tx_array[HOST_PARAM_BYTE+1] = 3;
         tx_array[HOST_PARAM_BYTE+2] = 4;
@@ -289,4 +292,32 @@ uint32_t meas_temp_calc( uint32_t inval){
 
 	return (int32_t)k-273;
 
+}
+
+//  returns the number of cells in an array
+int8_t sarray_num_cells(void){
+    return (int8_t)slave_count;
+}
+
+/*
+*creates a json formatted string with the specified cell data
+    Input: cell number, pointer to the destination JsonObject, size of the string
+    Returns the string length or 0 if cell data not available
+*/
+int8_t sarray_get_cell_datastr(int8_t cell, JsonObject jstr, uint8_t max_len){
+    if(cell > slave_count)
+        return 0;
+
+    tstr.clear();
+
+    tstr["addr"] = slave_array->address;
+    tstr["solar"] = slave_array->solar;
+    tstr["scap"] = slave_array->scap;
+    tstr["batt"] = slave_array->battery;
+    tstr["temp"] = slave_array->temp;
+    tstr["update"] = slave_array->updated;
+
+    jstr = tstr.as<JsonObject>();
+
+    return tstr.size();
 }

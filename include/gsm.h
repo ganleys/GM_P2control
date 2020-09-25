@@ -17,7 +17,9 @@
 
 #define GSM_PIN 13
 
-void GSM_init(void);
+#define GSM_TASK_DELAY  30000
+
+void gsm_Setup(void);
 void gsm_loop(void);
 void mqttCallback(char* topic, byte* payload, unsigned int len);
 boolean mqttConnect();

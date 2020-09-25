@@ -95,4 +95,7 @@ int8_t saary_slv_param_get(uint8_t address, uint8_t reg, uint16_t *param);
 uint8_t sarry_calc_checksum(uint8_t *array);
 uint32_t meas_temp_calc( uint32_t inval);
 
+int8_t sarray_num_cells(void);
+int8_t sarray_get_cell_datastr(int8_t cell, char *str, uint8_t max_len);
+
 #endif //SARRAY_H

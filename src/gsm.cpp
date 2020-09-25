@@ -45,21 +45,21 @@ void gsm_Setup(void){
       // Set GSM module baud rate
     //TinyGsmAutoBaud(SerialAT, GSM_AUTOBAUD_MIN, GSM_AUTOBAUD_MAX);
     SerialAT.begin(115600);
-    delay(6000);
-    //SerialAT.println("test");
+    delay(1000);
+  
 
-    if(!modem.restart()){    //initialize modem
-      Serial.println("modem restart error");
-    }else{
-      Serial.println("modem restarted");
-    }    
+    do{   //initialize modem
+        Serial.println("modem starting");
+    }while(!modem.restart());
+    Serial.println("modem restarted");
+      
     
               
-    if(!modem.waitForNetwork(60000L)){
-      Serial.println("modem no network");
-    }else{
-      Serial.println("modem network found");      
-    }
+    do{
+      Serial.println("modem finding network");
+    }while(!modem.waitForNetwork(60000L));
+    Serial.println("modem network found");      
+    
 
     if(!modem.gprsConnect(apn)){
       Serial.println("modem connect failed");
@@ -98,8 +98,13 @@ void gsm_loop(){
         delay(100);
         return;
     }
+    //else{
+    //  mqtt.publish(topicContollerStatus,"controllerstatus" );
+    //}
 
   mqtt.loop();
+
+  vTaskDelay(GSM_TASK_DELAY);
 }
 
 /*

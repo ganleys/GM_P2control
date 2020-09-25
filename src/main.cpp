@@ -5,7 +5,7 @@
 #include <wire.h>
 #include <SPI.h>
 //#include <Mcu.h>
-//#include "gsm.h"
+#include "gsm.h"
 //#include "gps.h"
 //#include "compass.h"
 //#include "gyro.h"
@@ -35,6 +35,9 @@ void setup() {
   //SPI.begin(SCK,MISO,MOSI,SS);
   //Mcu.begin(SS,RST,DIO0,DIO1,LICENSE);
 
+  // configure the gsm module
+  gsm_Setup();
+
   //configure the I2C
   //Wire.begin();
 
@@ -48,7 +51,7 @@ void setup() {
   //gyro_Setup();
 
   //scan for solar cells in the arry
-  sarray_Setup();
+  //sarray_Setup();
 
   //start the LoRa network interface
   //LoRa.DeviceStateInit(CLASS_A);
@@ -65,4 +68,5 @@ void loop() {
   //compass_loop();
   //gyro_loop();
   sarray_loop();
+  gsm_loop();
 }
