@@ -4,6 +4,8 @@
 *   sarray.h
 */
 
+#include <ArduinoJson.h>
+
 #ifndef SARRAY_H
 #define SARRAY_H
 
@@ -96,6 +98,6 @@ uint8_t sarry_calc_checksum(uint8_t *array);
 uint32_t meas_temp_calc( uint32_t inval);
 
 int8_t sarray_num_cells(void);
-int8_t sarray_get_cell_datastr(int8_t cell, char *str, uint8_t max_len);
+int8_t sarray_get_cell_datastr(int8_t cell, JsonObject *jstr);
 
 #endif //SARRAY_H

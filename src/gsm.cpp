@@ -5,8 +5,8 @@
 
 #include <TinyGsmClient.h>
 #include <PubSubClient.h>
-//SoftwareSerial(int receivePin, int transmitPin, bool inverse_logic = false, unsigned int buffSize = 64);
-//SoftwareSerial SerialAT(16,17,false,256);
+#include <ArduinoJson.h>
+#include "sarray.h"
 
 TinyGsm modem(SerialAT);
 TinyGsmClient client(modem);
@@ -14,13 +14,20 @@ PubSubClient mqtt(client);
 uint32_t lastReconnectAttempt;
 int ControllerStatus;
 
+
 // MQTT details
 const char* broker = "grafdev.dnsalias.com";
 const char* topicStatus = "GrafmarineController/status";
 const char* topicInit = "GrafmarineController/init";
 const char* topicContollerStatus = "GrafmarineController/ControllerStatus";
+const char* topicTileData = "GrafmarineController/tiledata";
 const char* mosquittoUser = "grafdev";
 const char* mosquittoPass = "Solar";
+
+const size_t CAPACITY = JSON_OBJECT_SIZE(1);
+StaticJsonDocument<CAPACITY> doc;
+JsonObject jobj = doc.to<JsonObject>();
+char msgbuffer[256];
 
 // Your GPRS credentials, if any
 const char apn[]  = "giffgaff.com";
@@ -79,32 +86,52 @@ void gsm_Setup(void){
     // MQTT Broker setup
     mqtt.setServer(broker, 1883);
     mqtt.setCallback(mqttCallback);    
+
+  
 }
 
 /*
 *   GSM loop 
 */
 void gsm_loop(){
-    if (!mqtt.connected()) {
-        Serial.println("=== MQTT NOT CONNECTED ===");
-        // Reconnect every 10 seconds
-        uint32_t t = millis();
-        if (t - lastReconnectAttempt > 10000L) {
-            lastReconnectAttempt = t;
-                if (mqttConnect()) {
-                    lastReconnectAttempt = 0;
-            }
-        }
-        delay(100);
-        return;
+
+  int8_t c,i=0;
+
+  if (!mqtt.connected()) {
+      
+      // Reconnect every 30 seconds
+      uint32_t t = millis();
+      if (t - lastReconnectAttempt > 30000L) {
+          lastReconnectAttempt = t;
+          Serial.println("MQTT connecting");
+              if (mqttConnect()) {
+                  lastReconnectAttempt = 0;
+          }
+      }
+      delay(200);
+      return;
+  }
+  else{
+    c = sarray_num_cells();
+    if(c>0){
+      do{
+        sarray_get_cell_datastr(c, &jobj);
+        serializeJson(jobj,msgbuffer);
+        Serial.print("publishing ");
+        Serial.println(msgbuffer);
+        mqtt.publish(topicTileData,msgbuffer);  
+        delay(200);    
+      }while(++i<c);
     }
-    //else{
-    //  mqtt.publish(topicContollerStatus,"controllerstatus" );
-    //}
+
+    mqtt.publish(topicContollerStatus,"controllerstatus" );
+    //Serial.println("publishing");
+
+  }
 
   mqtt.loop();
 
-  vTaskDelay(GSM_TASK_DELAY);
+  delay(GSM_TASK_DELAY);
 }
 
 /*

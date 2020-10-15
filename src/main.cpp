@@ -51,7 +51,7 @@ void setup() {
   //gyro_Setup();
 
   //scan for solar cells in the arry
-  //sarray_Setup();
+  sarray_Setup();
 
   //start the LoRa network interface
   //LoRa.DeviceStateInit(CLASS_A);

@@ -17,7 +17,7 @@
 
 #define GSM_PIN 13
 
-#define GSM_TASK_DELAY  30000
+#define GSM_TASK_DELAY  60000
 
 void gsm_Setup(void);
 void gsm_loop(void);

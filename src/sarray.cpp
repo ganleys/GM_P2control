@@ -4,9 +4,9 @@
 *   sarray.cpp
 */
 #include <Arduino.h>
-#include "sarray.h"
 #include <SoftwareSerial.h>
 #include <ArduinoJson.h>
+#include "sarray.h"
 
 SoftwareSerial SBserial;
 
@@ -304,9 +304,12 @@ int8_t sarray_num_cells(void){
     Input: cell number, pointer to the destination JsonObject, size of the string
     Returns the string length or 0 if cell data not available
 */
-int8_t sarray_get_cell_datastr(int8_t cell, JsonObject jstr, uint8_t max_len){
-    if(cell > slave_count)
-        return 0;
+int8_t sarray_get_cell_datastr(int8_t cell, JsonObject *jstr){
+
+//char buffer[256];
+
+    //if(cell > slave_count)
+    //    return 0;
 
     tstr.clear();
 
@@ -317,7 +320,10 @@ int8_t sarray_get_cell_datastr(int8_t cell, JsonObject jstr, uint8_t max_len){
     tstr["temp"] = slave_array->temp;
     tstr["update"] = slave_array->updated;
 
-    jstr = tstr.as<JsonObject>();
+    *jstr = tstr.as<JsonObject>();
 
+    //serializeJson(jstr,buffer);
+    //Serial.print("publishing ");
+    //Serial.println(buffer);
     return tstr.size();
 }
