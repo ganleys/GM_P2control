@@ -52,6 +52,7 @@ void setup() {
 
   //scan for solar cells in the arry
   sarray_Setup();
+  
 
   //start the LoRa network interface
   //LoRa.DeviceStateInit(CLASS_A);
@@ -68,5 +69,6 @@ void loop() {
   //compass_loop();
   //gyro_loop();
   sarray_loop();
+  //sarray_scan();
   gsm_loop();
 }

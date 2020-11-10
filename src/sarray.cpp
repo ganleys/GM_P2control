@@ -9,7 +9,6 @@
 #include "sarray.h"
 
 SoftwareSerial SBserial;
-
 CELL slave_array[SLAVE_ARRAY_SZ];
 uint8_t tx_array[TX_CELL_FRAME_SZ];
 uint8_t rx_array[CELL_FRAME_SZ];
@@ -23,12 +22,13 @@ StaticJsonDocument<200> tstr;
 void sarray_Setup(){
 
     //start the serial bus interface
-    //SBserial.begin(9600);
-    SBserial.begin(9600, SWSERIAL_8N1, SBRX, SBTX);
-    pinMode(SBTX,PULLUP);
+    //SBserial.begin(2400);
+    SBserial.begin(2400, SWSERIAL_8N1, SBRX, SBTX);
+    //pinMode(SBTX,PULLUP);
 
     //request an array scan
     sarray_scan_now = 1;
+    //slave_count = 7;
 
 }
 
@@ -48,7 +48,7 @@ void sarray_loop(){
     {
         
         if(slave_update_count < slave_count ){
-
+            //delay(5000);
             //get the status byte
             //saary_slv_status_get(slave_array[slave_update_count].address,  (uint8_t *)&slave_array[slave_update_count].status);
             //get the parameter data
@@ -83,12 +83,13 @@ void sarray_loop(){
             }else{
                 Serial.print("Temp Error ");Serial.println(err);
             } 
+            
             slave_array[slave_update_count].updated = true;
 
             //increment the update counter
             if(++slave_update_count == slave_count){
                 slave_update_count = 0;
-                //sarray_scan_now = 1;
+                sarray_scan_now = 1;
             }
             //delay(1000);
         }
@@ -96,12 +97,7 @@ void sarray_loop(){
     
 
     if(slave_update_count == 0) 
-        vTaskDelay(SAARY_TASK_DELAY); 
-    //else  
-    //    vTaskDelay(1000);    
-
-    
-
+        vTaskDelay(SAARY_TASK_DELAY);   
 }
 
 /*
@@ -117,17 +113,16 @@ int8_t sarray_scan(){
     //clear the array and reset the number of slaves
     memset(slave_array,0,sizeof(slave_array));
 
-
     if(slave_count > 0){
-        
-    
-    slave_count = 0;
+          
+        slave_count = 0;
     }
     slave_update_count = 0;
     
 
     //scan the array
-    for(uint8_t i = 0; i < 8; i++){     //SLAVE_ARRAY_SZ
+    for(uint8_t i = 0x10; i < 0x18; i++){     //SLAVE_ARRAY_SZ
+
         memset(tx_array,0,sizeof(tx_array));
         sum = 0;
         //send request to a slav
@@ -140,32 +135,38 @@ int8_t sarray_scan(){
             sum += tx_array[c];
         tx_array[HOST_CSUM_BYTE] = 0xff - sum;     
         Serial.print("Scanning slave ");Serial.print(i);
+        memset(rx_array,255,sizeof(rx_array));
         //SBserial.setTimeout(ARRAY_TIMEOUT);
         SBserial.write(tx_array,TX_CELL_FRAME_SZ);
 
         loop_count = 0;
+        
         do{
-            delay(10);
+            len =0;
 
-            if(SBserial.available() == 8){
-            //read the return message
-                len = SBserial.readBytes(rx_array,CELL_FRAME_SZ);
-/*
-                Serial.print(" rx -");
-                for(int c = 0; c< len; c++){
-                    Serial.print(" ,");
-                    Serial.print(rx_array[c]);
+            if(SBserial.available() >0){
+                if(SBserial.read() == i){
+                //read the return message
+                    len = SBserial.readBytes(&rx_array[1],6);
+                    rx_array[0] = i;
+                    Serial.print(" rx -");
+                    for(int c = 0; c< CELL_FRAME_SZ; c++){
+                        Serial.print(" ,");
+                        Serial.print(rx_array[c]);
+                    }
+                    
+                    loop_count = 3001;
                 }
-*/                
-                loop_count = 1001;
-            }
+            }else
+                loop_count++;
 
-            loop_count++;
-        }while(loop_count < 1000);
+            delay(1);
+
+        }while(loop_count < 3000);
         
         
         //check the returned message
-        if(len == CELL_FRAME_SZ){
+        if(len >= 4){
             if(rx_array[HOST_ADDRESS_BYTE]>250){
                 Serial.println(" not found!");         
             }
@@ -178,6 +179,7 @@ int8_t sarray_scan(){
             Serial.print("- Empty - ");
             Serial.println(len);
         }
+        //SBserial.flush();
         len = 0;
         delay(2000);
     }
@@ -200,37 +202,61 @@ int8_t sarray_scan(){
 int8_t saary_slv_param_get(uint8_t address, uint8_t reg, uint16_t *param){
 
     uint8_t len=0, sum =0;
+    uint16_t loop_count = 0;
 
     memset(tx_array,0,sizeof(tx_array));
     tx_array[HOST_ADDRESS_BYTE] = address;
     tx_array[HOST_REGISTER_BYTE] = reg;
+    tx_array[HOST_REGISTER_BYTE-1] = reg;
     for (int c = 0; c< 7; c++)
         sum += tx_array[c];
     tx_array[HOST_CSUM_BYTE] = 0xff - sum; 
+
+    Serial.print(" Tx -");
+    for(int c = 0; c< CELL_FRAME_SZ; c++){
+        Serial.print(" ,");
+        Serial.print(tx_array[c]);
+    }
+    Serial.print("----");
     
     SBserial.write(tx_array,TX_CELL_FRAME_SZ);
-    delay(10);
+    
+    len = 0;
+    do{
+        
+        if(SBserial.available() >0){
+            if(SBserial.read() == address){
+            //read the return message
+                len = SBserial.readBytes(&rx_array[1],6);
+                rx_array[0] = address;
+                Serial.print(" rx -");
+                for(int c = 0; c< CELL_FRAME_SZ; c++){
+                    Serial.print(" ,");
+                    Serial.print(rx_array[c]);
+                }
+                Serial.print(".....");
+                loop_count = 3001;
+            }
+        }else
+            loop_count++;
 
-    len = SBserial.readBytes(rx_array,CELL_FRAME_SZ);
+        delay(1);
 
-    Serial.print(" rx -");
-    for(int c = 0; c< len; c++){
-        Serial.print(" ,");
-        Serial.print(rx_array[c]);
-    }
+    }while(loop_count < 3000);    
 
-    if(len != CELL_FRAME_SZ)
-        return 	MSG_BAD_SZ;
+
+    //if(len != CELL_FRAME_SZ)
+    //    return 	MSG_BAD_SZ;
 
     if(rx_array[HOST_ADDRESS_BYTE] != address)
         return 	MSG_BAD_RESPONSE;
 
-    sum =  sarry_calc_checksum(rx_array);        
+    //sum =  sarry_calc_checksum(rx_array);        
 
-    if(sum != rx_array[HOST_CSUM_BYTE])
-        return MSG_ERROR;
+    //if(sum != rx_array[HOST_CSUM_BYTE])
+    //    return MSG_ERROR;
     
-    memcpy(param, &rx_array[HOST_PARAM_BYTE], HOST_PARAM_BYTE_SZ);
+    memcpy(param, &rx_array[HOST_PARAM_BYTE-1], HOST_PARAM_BYTE_SZ);
 
     return MSG_OK;
 }

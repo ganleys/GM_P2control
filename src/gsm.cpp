@@ -131,7 +131,7 @@ void gsm_loop(){
 
   mqtt.loop();
 
-  delay(GSM_TASK_DELAY);
+  //delay(GSM_TASK_DELAY);
 }
 
 /*
