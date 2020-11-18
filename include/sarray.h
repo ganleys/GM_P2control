@@ -9,7 +9,7 @@
 #ifndef SARRAY_H
 #define SARRAY_H
 
-#define SAARY_TASK_DELAY	portTICK_PERIOD_MS*3000
+#define SAARY_TASK_DELAY	portTICK_PERIOD_MS*30000
 
 //#define SBserial Serial2
 #define SLAVE_ARRAY_SZ  16	//maximum number of slave devices in the array
@@ -20,6 +20,7 @@
 #define CELL_FRAME_SZ	8
 #define TX_CELL_FRAME_SZ	8
 #define ARRAY_TIMEOUT   1000	// 1second time out
+#define	SARRAY_DELAY 10	//scanning interval in minutes
 
 typedef struct {
     uint8_t address;
@@ -89,8 +90,10 @@ typedef struct{
 }CELL_STATUS;
 
 
+
+
 void sarray_Setup(void);
-void sarray_loop(void);
+void sarray_loop(bool parameter);
 int8_t sarray_scan(void);
 int8_t saary_slv_status_get(uint8_t address,  uint8_t *param);
 int8_t saary_slv_param_get(uint8_t address, uint8_t reg, uint16_t *param);

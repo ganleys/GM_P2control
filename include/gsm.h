@@ -4,6 +4,7 @@
 #include <Arduino.h>
 //#include "board.h"
 
+
 #ifndef _GSM_H_
 #define _GSM_H_
 
@@ -17,10 +18,12 @@
 
 #define GSM_PIN 13
 
-#define GSM_TASK_DELAY  60000
+#define GSM_TASK_DELAY  500/portTICK_PERIOD_MS
+
+
 
 void gsm_Setup(void);
-void gsm_loop(void);
+void gsm_loop(void * parameter);
 void mqttCallback(char* topic, byte* payload, unsigned int len);
 boolean mqttConnect();
 

@@ -1,19 +1,25 @@
 #include <Arduino.h>
 #include <TinyGPS.h>
 #include <SoftwareSerial.h>
+#include <ArduinoJson.h>
 #include "gps.h"
 
+SoftwareSerial ss;
 //#define ss Serial2
-
-//SoftwareSerial ss;
-#define ss Serial2
 
 static const uint32_t GPSBaud = 9600;
 static const int MAX_SATELLITES = 40;
 static const int PAGE_LENGTH = 40;
-
-// The TinyGPS++ object
+unsigned long age, date, time, chars = 0;
+unsigned short sentences = 0, failed = 0;
+static const double LONDON_LAT = 51.508131, LONDON_LON = -0.128002;
+int gps_repeat;
+bool gps_fix;
+float gps_lat;
+float gps_lon;
 TinyGPS gps;
+
+StaticJsonDocument<200> gps_tstr; 
 
 struct
 {
@@ -23,51 +29,78 @@ struct
 
 void gps_setup()
 {
+  time_t t;
   //pinMode(32,INPUT);
-  //digitalWrite(15,LOW);
+  digitalWrite(12,LOW);
+  t = now();
+  gps_repeat = hour(t)-1;
+  gps_fix = false;
 
-  ss.begin(9600); //, SWSERIAL_8N1, 39, 1, false, 256);
-  //Serial.print("Testing TinyGPS library v. "); 
-  //Serial.println(TinyGPS::library_version());
-  //Serial.println("by Mikal Hart");
-  //Serial.println();
+  ss.begin(9600,SWSERIAL_8N1, 25, NULL, false, 256);
+  Serial.print("Testing TinyGPS library v. "); 
+  Serial.println(TinyGPS::library_version());
+  /*
+  Serial.println("by Mikal Hart");
+  Serial.println();
   Serial.println("Sats HDOP Latitude  Longitude  Fix  Date       Time     Date Alt    Course Speed Card  Distance Course Card  Chars Sentences Checksum");
   Serial.println("          (deg)     (deg)      Age                      Age  (m)    --- from GPS ----  ---- to London  ----  RX    RX        Fail");
   Serial.println("-------------------------------------------------------------------------------------------------------------------------------------");
-  delay(1000);
-  
-  
+  delay(1000);    
+  */
 }
 
 void gps_loop()
 {
-  float flat, flon;
-  unsigned long age, date, time, chars = 0;
-  unsigned short sentences = 0, failed = 0;
-  static const double LONDON_LAT = 51.508131, LONDON_LON = -0.128002;
+  time_t t;
   
-  print_int(gps.satellites(), TinyGPS::GPS_INVALID_SATELLITES, 5);
-  print_int(gps.hdop(), TinyGPS::GPS_INVALID_HDOP, 5);
-  gps.f_get_position(&flat, &flon, &age);
-  print_float(flat, TinyGPS::GPS_INVALID_F_ANGLE, 10, 6);
-  print_float(flon, TinyGPS::GPS_INVALID_F_ANGLE, 11, 6);
-  print_int(age, TinyGPS::GPS_INVALID_AGE, 5);
-  print_date(gps);
-  print_float(gps.f_altitude(), TinyGPS::GPS_INVALID_F_ALTITUDE, 7, 2);
-  print_float(gps.f_course(), TinyGPS::GPS_INVALID_F_ANGLE, 7, 2);
-  print_float(gps.f_speed_kmph(), TinyGPS::GPS_INVALID_F_SPEED, 6, 2);
-  print_str(gps.f_course() == TinyGPS::GPS_INVALID_F_ANGLE ? "*** " : TinyGPS::cardinal(gps.f_course()), 6);
-  print_int(flat == TinyGPS::GPS_INVALID_F_ANGLE ? 0xFFFFFFFF : (unsigned long)TinyGPS::distance_between(flat, flon, LONDON_LAT, LONDON_LON) / 1000, 0xFFFFFFFF, 9);
-  print_float(flat == TinyGPS::GPS_INVALID_F_ANGLE ? TinyGPS::GPS_INVALID_F_ANGLE : TinyGPS::course_to(flat, flon, LONDON_LAT, LONDON_LON), TinyGPS::GPS_INVALID_F_ANGLE, 7, 2);
-  print_str(flat == TinyGPS::GPS_INVALID_F_ANGLE ? "*** " : TinyGPS::cardinal(TinyGPS::course_to(flat, flon, LONDON_LAT, LONDON_LON)), 6);
+  t = now();
 
-  gps.stats(&chars, &sentences, &failed);
-  print_int(chars, 0xFFFFFFFF, 6);
-  print_int(sentences, 0xFFFFFFFF, 10);
-  print_int(failed, 0xFFFFFFFF, 9); 
-  Serial.print("\r");
-  //delay(1000);
-  smartdelay(1000);
+  if(gps_repeat != hour(t)){
+
+    if(gps_fix == true)
+      return;
+
+    Serial.println("GPS scanning for satellites\r");
+    //do{
+  
+      //print_int(gps.satellites(), TinyGPS::GPS_INVALID_SATELLITES, 5);
+      //print_int(gps.hdop(), TinyGPS::GPS_INVALID_HDOP, 5);
+      gps.f_get_position(&gps_lat, &gps_lon, &age);
+      /*print_float(gps_lat, TinyGPS::GPS_INVALID_F_ANGLE, 10, 6);
+      print_float(gps_lon, TinyGPS::GPS_INVALID_F_ANGLE, 11, 6);
+      print_int(age, TinyGPS::GPS_INVALID_AGE, 5);
+      print_date(gps);
+      print_float(gps.f_altitude(), TinyGPS::GPS_INVALID_F_ALTITUDE, 7, 2);
+      print_float(gps.f_course(), TinyGPS::GPS_INVALID_F_ANGLE, 7, 2);
+      print_float(gps.f_speed_kmph(), TinyGPS::GPS_INVALID_F_SPEED, 6, 2);
+      print_str(gps.f_course() == TinyGPS::GPS_INVALID_F_ANGLE ? "*** " : TinyGPS::cardinal(gps.f_course()), 6);
+      print_int(gps_lat == TinyGPS::GPS_INVALID_F_ANGLE ? 0xFFFFFFFF : (unsigned long)TinyGPS::distance_between(gps_lat, gps_lon, LONDON_LAT, LONDON_LON) / 1000, 0xFFFFFFFF, 9);
+      print_float(gps_lat == TinyGPS::GPS_INVALID_F_ANGLE ? TinyGPS::GPS_INVALID_F_ANGLE : TinyGPS::course_to(gps_lat, gps_lon, LONDON_LAT, LONDON_LON), TinyGPS::GPS_INVALID_F_ANGLE, 7, 2);
+      print_str(gps_lat == TinyGPS::GPS_INVALID_F_ANGLE ? "*** " : TinyGPS::cardinal(TinyGPS::course_to(gps_lat, gps_lon, LONDON_LAT, LONDON_LON)), 6);
+
+      gps.stats(&chars, &sentences, &failed);
+      print_int(chars, 0xFFFFFFFF, 6);
+      print_int(sentences, 0xFFFFFFFF, 10);
+      print_int(failed, 0xFFFFFFFF, 9); 
+      Serial.print("\r");
+      */
+      smartdelay(1000);
+      
+    //}while
+    if(gps_lat != TinyGPS::GPS_INVALID_F_ANGLE){
+
+    Serial.print("GPS location ");
+      print_float(gps_lat, TinyGPS::GPS_INVALID_F_ANGLE, 10, 6);
+      print_float(gps_lon, TinyGPS::GPS_INVALID_F_ANGLE, 11, 6);
+      Serial.println("\r");
+      gps_fix = true;
+
+      //calculate the next interval
+      gps_repeat = hour();
+      if(gps_repeat > 23)
+          gps_repeat = 0;
+    }
+  }
 }
 
 void smartdelay(unsigned long ms)
@@ -76,9 +109,24 @@ void smartdelay(unsigned long ms)
   do 
   {
     while (ss.available())
-      if(gps.encode(ss.read())==false)
-        Serial.print("\r gps error");
+      gps.encode(ss.read());     
   } while (millis() - start < ms);
+}
+
+int8_t gps_get_location(int8_t cell, JsonObject *jstr){
+
+    char timestr[30];
+   
+    sprintf(timestr, "%04d%02d%02dT%02d%02d%02dZ", year(),month(),day(),hour(),minute(),second());
+
+    gps_tstr.clear();
+    gps_tstr["stamp"] = timestr;
+    gps_tstr["long"] = gps_lon;
+    gps_tstr["lat"] = gps_lat;
+
+    *jstr = gps_tstr.as<JsonObject>();
+
+    return gps_tstr.size();
 }
 
 void print_float(float val, float invalid, int len, int prec)

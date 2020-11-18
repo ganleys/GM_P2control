@@ -1,16 +1,24 @@
 #include <Arduino.h>
+#include <esp_task_wdt.h>
 //#include "board.h"
 #include <LoRa.h>
 #include <WiFi.h>
 #include <wire.h>
 #include <SPI.h>
+#include <time.h>
 //#include <Mcu.h>
 #include "gsm.h"
-//#include "gps.h"
-//#include "compass.h"
-//#include "gyro.h"
+#include "gps.h"
+#include "compass.h"
+#include "gyro.h"
 #include "sarray.h"
+#include "soc/timer_group_struct.h"
+#include "soc/timer_group_reg.h"
 
+TaskHandle_t *pvGSMTask;
+TaskHandle_t *pvSarrayTask;
+
+//time_t scan_timer;
 
 #define RST   14   // GPIO14 -- SX1278's RESET
 #define DIO1  25
@@ -18,7 +26,8 @@ uint32_t  LICENSE[4] = {0xDD251C39,0x44C5F937,0xBB160873,0x072EB7C8};
 //#define USE_BAND_868
 #define BAND 866E6
   
-uint64_t chipid;  
+uint64_t chipid;
+bool first_scan;  
 
 void setup() {
   // configure the serial ports
@@ -42,7 +51,7 @@ void setup() {
   //Wire.begin();
 
   //configure the GSM modem
-  //gps_setup();
+  gps_setup();
 
   //compass setup
   //comapass_setup();
@@ -52,23 +61,36 @@ void setup() {
 
   //scan for solar cells in the arry
   sarray_Setup();
-  
+  first_scan = true;
 
   //start the LoRa network interface
   //LoRa.DeviceStateInit(CLASS_A);
   //Serial.println("LoRa Started");
 
-  Serial.println("**************");
-  Serial.println("Setup complete");
-  Serial.println("**************\r\n");
+  //start tasks
+ // xTaskCreate(gsm_loop,"GSM loop",2000,NULL,1,pvGSMTask);
+  //xTaskCreate(sarray_loop,"sarray loop",1000,NULL,1,pvSarrayTask);
+
+  Serial.println("************** Setup complete **************\r\n");
 }
 
 void loop() {
 
-  //gps_loop();
-  //compass_loop();
-  //gyro_loop();
-  sarray_loop();
-  //sarray_scan();
-  gsm_loop();
+  //time_t t;
+
+  for(;;){
+
+    gps_loop();
+    //compass_loop();
+    //gyro_loop();
+
+    sarray_loop((void *)first_scan);
+    first_scan = false;
+    gsm_loop((void *)NULL);
+
+    TIMERG0.wdt_wprotect=TIMG_WDT_WKEY_VALUE;
+    TIMERG0.wdt_feed=1;
+    TIMERG0.wdt_wprotect=0;
+
+  }
 }

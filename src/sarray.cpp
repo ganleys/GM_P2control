@@ -5,7 +5,9 @@
 */
 #include <Arduino.h>
 #include <SoftwareSerial.h>
+#include <esp_task_wdt.h>
 #include <ArduinoJson.h>
+#include <time.h>
 #include "sarray.h"
 
 SoftwareSerial SBserial;
@@ -17,6 +19,8 @@ uint8_t slave_update_count = 0;
 uint8_t sarray_scan_now;
 
 StaticJsonDocument<200> tstr; 
+bool sarray_dav;
+time_t repeat_time;
 
 
 void sarray_Setup(){
@@ -30,74 +34,94 @@ void sarray_Setup(){
     sarray_scan_now = 1;
     //slave_count = 7;
 
+    //no updates yet
+    sarray_dav = false;
+
+    repeat_time = now();
+
 }
 
 /*
 *   main processing loop that perodically retrieves data 
 *   from the cells in the attached array
 */
-void sarray_loop(){
-
+void sarray_loop(bool parameter){
     int8_t err;
+    time_t t;
 
-    //check top see if a slave scan is needed
-    if(sarray_scan_now != 0)
-        sarray_scan();    
+    //for(;;){
 
-    if(slave_count > 0)
-    {
-        
-        if(slave_update_count < slave_count ){
-            //delay(5000);
-            //get the status byte
-            //saary_slv_status_get(slave_array[slave_update_count].address,  (uint8_t *)&slave_array[slave_update_count].status);
-            //get the parameter data
-            err = saary_slv_param_get(slave_array[slave_update_count].address, solar_reg , &slave_array[slave_update_count].solar);
-            if(err == MSG_OK){
-                Serial.print("Solar V = ");Serial.println(slave_array[slave_update_count].solar);
-            }else{
-                Serial.print("Solar V Error ");Serial.println(err);
-            }
-            delay(1000);
+        t = now();
 
-            err = saary_slv_param_get(slave_array[slave_update_count].address, voltage_reg , &slave_array[slave_update_count].scap);
-            if(err == MSG_OK){
-                Serial.print("Scap V = ");Serial.println(slave_array[slave_update_count].scap);
-            }else{
-                Serial.print("Scap V Error ");Serial.println(err);
-            }      
-            delay(1000);
+        if((repeat_time == minute(t)) || (parameter == true)){
 
-            err = saary_slv_param_get(slave_array[slave_update_count].address, battery_reg , &slave_array[slave_update_count].battery);
-            if(err == MSG_OK){
-                Serial.print("Scap V = ");Serial.println(slave_array[slave_update_count].scap);
-            }else{
-                Serial.print("Scap V Error ");Serial.println(err);
-            }             
-            delay(1000);
+            //check top see if a slave scan is needed
+            if(sarray_scan_now != 0)
+                sarray_scan();    
 
-            err = saary_slv_param_get(slave_array[slave_update_count].address, temp_reg , &slave_array[slave_update_count].temp);
-            if(err == MSG_OK){
-                //slave_array[slave_update_count].temp = (uint16_t) meas_temp_calc( (uint32_t) slave_array[slave_update_count].temp);
-                Serial.print("Temp = ");Serial.println(slave_array[slave_update_count].temp);
-            }else{
-                Serial.print("Temp Error ");Serial.println(err);
-            } 
-            
-            slave_array[slave_update_count].updated = true;
+            do{
+                //sarray_dav = false;
 
-            //increment the update counter
-            if(++slave_update_count == slave_count){
-                slave_update_count = 0;
-                sarray_scan_now = 1;
-            }
-            //delay(1000);
-        }
-    }
-    
+                if(slave_update_count < slave_count ){
 
-    if(slave_update_count == 0) 
-        vTaskDelay(SAARY_TASK_DELAY);   
+                    //get the status byte
+                    //saary_slv_status_get(slave_array[slave_update_count].address,  (uint8_t *)&slave_array[slave_update_count].status);
+
+                    //get the parameter data
+                    err = saary_slv_param_get(slave_array[slave_update_count].address, solar_reg , &slave_array[slave_update_count].solar);
+                    if(err == MSG_OK){
+                        Serial.print("Solar V = ");Serial.println(slave_array[slave_update_count].solar);
+                    }else{
+                        Serial.print("Solar V Error ");Serial.println(err);
+                    }
+                    delay(1000);
+
+                    err = saary_slv_param_get(slave_array[slave_update_count].address, voltage_reg , &slave_array[slave_update_count].scap);
+                    if(err == MSG_OK){
+                        Serial.print("Scap V = ");Serial.println(slave_array[slave_update_count].scap);
+                    }else{
+                        Serial.print("Scap V Error ");Serial.println(err);
+                    }      
+                    delay(1000);
+
+                    err = saary_slv_param_get(slave_array[slave_update_count].address, battery_reg , &slave_array[slave_update_count].battery);
+                    if(err == MSG_OK){
+                        Serial.print("Scap V = ");Serial.println(slave_array[slave_update_count].scap);
+                    }else{
+                        Serial.print("Scap V Error ");Serial.println(err);
+                    }             
+                    delay(1000);
+
+                    err = saary_slv_param_get(slave_array[slave_update_count].address, temp_reg , &slave_array[slave_update_count].temp);
+                    if(err == MSG_OK){
+                        //slave_array[slave_update_count].temp = (uint16_t) meas_temp_calc( (uint32_t) slave_array[slave_update_count].temp);
+                        Serial.print("Temp = ");Serial.println(slave_array[slave_update_count].temp);
+                    }else{
+                        Serial.print("Temp Error ");Serial.println(err);
+                    } 
+                    
+                    slave_array[slave_update_count].updated = true;
+                    
+                    slave_update_count++;
+
+                    //increment the update counter
+                    if(slave_update_count == slave_count){
+                        slave_update_count = 0;
+                        sarray_scan_now = 1;
+                        sarray_dav = true;
+                    }
+                }
+            }while(slave_update_count > 0);
+
+            //calculate the next interval
+            repeat_time = minute() + SARRAY_DELAY;
+            if(repeat_time > 60)
+                repeat_time =-60;
+
+            Serial.print("sarray next scan at " );
+            Serial.print(repeat_time);
+        }     
+    //}
 }
 
 /*
@@ -182,6 +206,7 @@ int8_t sarray_scan(){
         //SBserial.flush();
         len = 0;
         delay(2000);
+
     }
     Serial.print(slave_count); Serial.println(" slaves Found");
     return len;
@@ -201,7 +226,7 @@ int8_t sarray_scan(){
 */
 int8_t saary_slv_param_get(uint8_t address, uint8_t reg, uint16_t *param){
 
-    uint8_t len=0, sum =0;
+    uint8_t sum =0;
     uint16_t loop_count = 0;
 
     memset(tx_array,0,sizeof(tx_array));
@@ -220,14 +245,13 @@ int8_t saary_slv_param_get(uint8_t address, uint8_t reg, uint16_t *param){
     Serial.print("----");
     
     SBserial.write(tx_array,TX_CELL_FRAME_SZ);
-    
-    len = 0;
+
     do{
         
         if(SBserial.available() >0){
             if(SBserial.read() == address){
             //read the return message
-                len = SBserial.readBytes(&rx_array[1],6);
+                SBserial.readBytes(&rx_array[1],6);
                 rx_array[0] = address;
                 Serial.print(" rx -");
                 for(int c = 0; c< CELL_FRAME_SZ; c++){
@@ -332,19 +356,20 @@ int8_t sarray_num_cells(void){
 */
 int8_t sarray_get_cell_datastr(int8_t cell, JsonObject *jstr){
 
-//char buffer[256];
+//char buffer[256]
 
-    //if(cell > slave_count)
-    //    return 0;
+    char timestr[30];
+   
+    sprintf(timestr, "%04d%02d%02dT%02d%02d%02dZ", year(),month(),day(),hour(),minute(),second());
 
     tstr.clear();
-
-    tstr["addr"] = slave_array->address;
-    tstr["solar"] = slave_array->solar;
-    tstr["scap"] = slave_array->scap;
-    tstr["batt"] = slave_array->battery;
-    tstr["temp"] = slave_array->temp;
-    tstr["update"] = slave_array->updated;
+    tstr["stamp"] = timestr;
+    tstr["addr"] = slave_array[cell].address;
+    tstr["solar"] = slave_array[cell].solar;
+    tstr["scap"] = slave_array[cell].scap;
+    tstr["batt"] = slave_array[cell].battery;
+    tstr["temp"] = slave_array[cell].temp;
+    tstr["update"] = slave_array[cell].updated;
 
     *jstr = tstr.as<JsonObject>();
 
