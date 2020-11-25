@@ -7,6 +7,8 @@
 #include <SPI.h>
 #include <time.h>
 //#include <Mcu.h>
+#include <EEPROM.h>
+#include "eprom_app.h"
 #include "gsm.h"
 #include "gps.h"
 #include "compass.h"
@@ -27,7 +29,8 @@ uint32_t  LICENSE[4] = {0xDD251C39,0x44C5F937,0xBB160873,0x072EB7C8};
 #define BAND 866E6
   
 uint64_t chipid;
-bool first_scan;  
+bool first_scan; 
+byte array_id; 
 
 void setup() {
   // configure the serial ports
@@ -43,6 +46,14 @@ void setup() {
   //configure the SPI port and I/O for Lora network use
   //SPI.begin(SCK,MISO,MOSI,SS);
   //Mcu.begin(SS,RST,DIO0,DIO1,LICENSE);
+  EEPROM.begin(EEPROM_SIZE_BYTE);
+  array_id = EEPROM.read(ADDR_ADDAY_ID);
+  if(array_id >253){
+    array_id = 0;
+    EEPROM.write(ADDR_ADDAY_ID,array_id);
+  }
+  Serial.print("Array address ");
+  Serial.println(array_id);
 
   // configure the gsm module
   gsm_Setup();
@@ -80,11 +91,12 @@ void loop() {
 
   for(;;){
 
-    gps_loop();
+    
     //compass_loop();
     //gyro_loop();
 
     sarray_loop((void *)first_scan);
+    gps_loop();
     first_scan = false;
     gsm_loop((void *)NULL);
 

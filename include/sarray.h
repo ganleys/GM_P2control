@@ -20,7 +20,7 @@
 #define CELL_FRAME_SZ	8
 #define TX_CELL_FRAME_SZ	8
 #define ARRAY_TIMEOUT   1000	// 1second time out
-#define	SARRAY_DELAY 10	//scanning interval in minutes
+#define	SARRAY_DELAY 10//scanning interval in minutes
 
 typedef struct {
     uint8_t address;

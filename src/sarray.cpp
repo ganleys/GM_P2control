@@ -10,6 +10,7 @@
 #include <time.h>
 #include "sarray.h"
 
+
 SoftwareSerial SBserial;
 CELL slave_array[SLAVE_ARRAY_SZ];
 uint8_t tx_array[TX_CELL_FRAME_SZ];
@@ -22,6 +23,7 @@ StaticJsonDocument<200> tstr;
 bool sarray_dav;
 time_t repeat_time;
 
+extern byte array_id;
 
 void sarray_Setup(){
 
@@ -116,7 +118,7 @@ void sarray_loop(bool parameter){
             //calculate the next interval
             repeat_time = minute() + SARRAY_DELAY;
             if(repeat_time > 60)
-                repeat_time =-60;
+                repeat_time = repeat_time - 60;
 
             Serial.print("sarray next scan at " );
             Serial.print(repeat_time);
@@ -364,6 +366,7 @@ int8_t sarray_get_cell_datastr(int8_t cell, JsonObject *jstr){
 
     tstr.clear();
     tstr["stamp"] = timestr;
+    tstr["array"] = array_id;
     tstr["addr"] = slave_array[cell].address;
     tstr["solar"] = slave_array[cell].solar;
     tstr["scap"] = slave_array[cell].scap;

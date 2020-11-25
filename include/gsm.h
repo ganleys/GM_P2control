@@ -13,14 +13,12 @@
 #define GSM_AUTOBAUD_MAX 57600
 //GSM modem selection
 #define TINY_GSM_MODEM_SIM800
-#define TINY_GSM_USE_GPRS true
-#define TINY_GSM_USE_WIFI false
+//#define TINY_GSM_USE_GPRS True
+#define TINY_GSM_USE_WIFI False
+//#define DUMP_AT_COMMANDS
 
 #define GSM_PIN 13
-
 #define GSM_TASK_DELAY  500/portTICK_PERIOD_MS
-
-
 
 void gsm_Setup(void);
 void gsm_loop(void * parameter);

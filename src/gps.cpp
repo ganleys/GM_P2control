@@ -2,6 +2,7 @@
 #include <TinyGPS.h>
 #include <SoftwareSerial.h>
 #include <ArduinoJson.h>
+#include <TimeLib.h>
 #include "gps.h"
 
 SoftwareSerial ss;
@@ -21,6 +22,8 @@ TinyGPS gps;
 
 StaticJsonDocument<200> gps_tstr; 
 
+extern byte array_id;
+
 struct
 {
   int elevation;
@@ -33,10 +36,10 @@ void gps_setup()
   //pinMode(32,INPUT);
   digitalWrite(12,LOW);
   t = now();
-  gps_repeat = hour(t)-1;
+  gps_repeat = minute(t)-1;
   gps_fix = false;
 
-  ss.begin(9600,SWSERIAL_8N1, 25, NULL, false, 256);
+  ss.begin(9600,SWSERIAL_8N1, 25);//, NULL, false, 254);
   Serial.print("Testing TinyGPS library v. "); 
   Serial.println(TinyGPS::library_version());
   /*
@@ -55,12 +58,14 @@ void gps_loop()
   
   t = now();
 
+  
+
   if(gps_repeat != hour(t)){
 
     if(gps_fix == true)
       return;
 
-    Serial.println("GPS scanning for satellites\r");
+    //Serial.println("GPS scanning for satellites\r");
     //do{
   
       //print_int(gps.satellites(), TinyGPS::GPS_INVALID_SATELLITES, 5);
@@ -89,15 +94,17 @@ void gps_loop()
     //}while
     if(gps_lat != TinyGPS::GPS_INVALID_F_ANGLE){
 
-    Serial.print("GPS location ");
+      Serial.print("GPS location ");
       print_float(gps_lat, TinyGPS::GPS_INVALID_F_ANGLE, 10, 6);
       print_float(gps_lon, TinyGPS::GPS_INVALID_F_ANGLE, 11, 6);
+      print_date(gps);
       Serial.println("\r");
+      
       gps_fix = true;
 
       //calculate the next interval
       gps_repeat = hour();
-      if(gps_repeat > 23)
+      if(gps_repeat >60)
           gps_repeat = 0;
     }
   }
@@ -121,6 +128,7 @@ int8_t gps_get_location(int8_t cell, JsonObject *jstr){
 
     gps_tstr.clear();
     gps_tstr["stamp"] = timestr;
+    gps_tstr["array"] = array_id;
     gps_tstr["long"] = gps_lon;
     gps_tstr["lat"] = gps_lat;
 
@@ -170,18 +178,15 @@ void print_date(TinyGPS &gps)
   int year;
   byte month, day, hour, minute, second, hundredths;
   unsigned long age;
+  char sz[32];
+
   gps.crack_datetime(&year, &month, &day, &hour, &minute, &second, &hundredths, &age);
-  if (age == TinyGPS::GPS_INVALID_AGE)
-    Serial.print("********** ******** ");
-  else
-  {
-    char sz[32];
-    sprintf(sz, "%02d/%02d/%02d %02d:%02d:%02d ",
-        month, day, year, hour, minute, second);
+  if (age != TinyGPS::GPS_INVALID_AGE){       
+    sprintf(sz, "%02d/%02d/%02d %02d:%02d:%02d ",month, day, year, hour, minute, second);
     Serial.print(sz);
-  }
-  print_int(age, TinyGPS::GPS_INVALID_AGE, 5);
-  smartdelay(0);
+    setTime(hour,minute,second,day,month,year);
+  }  
+  
 }
 
 void print_str(const char *str, int len)
