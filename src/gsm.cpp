@@ -61,6 +61,7 @@ const char apn[]  = "prepay.tesco-mobile.com";
 const char user[] = "tescowap";
 const char pass[] = "password";
 const char auth[] = "YourAuthToken";
+const char hostname[] = "graf_array1";
 const char wifiSSID[] = "CANDS";
 const char wifiPass[] = "3376156943";
 
@@ -72,6 +73,8 @@ void gsm_Setup(void){
 
 
     int hr,min,sec,day,mnth,yr;
+    String formattedDate;
+    char tString[200];
 
 
 #ifdef TINY_GSM_USE_WIFI
@@ -94,17 +97,28 @@ void gsm_Setup(void){
   Serial.println(WiFi.localIP());
 
   timeClient.begin();
-  timeClient.update();
+
+  while(!timeClient.update()) {
+    timeClient.forceUpdate();
+  }
+ 
+
+Serial.println((timeClient.getFormattedDate()));
 
   hr = timeClient.getHours();
   min = timeClient.getMinutes();
   sec = timeClient.getSeconds();
-  day = 1;
-  mnth = 1;
-  yr = 2020;
+
+  formattedDate = timeClient.getFormattedDate();
+  yr = formattedDate.substring(0,4).toInt();
+  mnth = formattedDate.substring(5,7).toInt();
+  day = formattedDate.substring(8,10).toInt();
+  memset(tString,0,sizeof(tString));
+  sprintf(tString," Time set to %d:%d:%d %d-%d-%d",hr,min,sec,day,mnth,yr);
+  Serial.println(tString);
 
   setTime(hr,min,sec,day, mnth, yr);
-  
+ 
 #else
 
     lastReconnectAttempt = 0;
@@ -187,6 +201,7 @@ void gsm_loop(void * parameter){
 
 
   //for(;;){
+    timeClient.update();
 
     if (!mqtt.connected()) {
         // Reconnect every 30 seconds
@@ -206,7 +221,7 @@ void gsm_loop(void * parameter){
         if(netretry > 1){
           digitalWrite(GSM_PIN,HIGH);
           delay(2000);
-          //gsm_Setup();
+          gsm_Setup();
 #ifdef TINY_GSM_USE_GPRS
           if(!modem.gprsConnect(apn)){
             return;

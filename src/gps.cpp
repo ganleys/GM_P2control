@@ -33,6 +33,7 @@ struct
 void gps_setup()
 {
   time_t t;
+
   //pinMode(32,INPUT);
   digitalWrite(12,LOW);
   t = now();
@@ -58,12 +59,15 @@ void gps_loop()
   
   t = now();
 
-  
+  //Serial.println("GPS loop");
 
   if(gps_repeat != hour(t)){
 
-    if(gps_fix == true)
+    if(gps_fix == true){
+      Serial.println("GPS fixed");
       return;
+    }
+      
 
     //Serial.println("GPS scanning for satellites\r");
     //do{
@@ -104,9 +108,19 @@ void gps_loop()
 
       //calculate the next interval
       gps_repeat = hour();
-      if(gps_repeat >60)
-          gps_repeat = 0;
+      if(gps_fix == true){        
+        if(gps_repeat >59)
+            gps_repeat = 0;
+      }
     }
+/*    else{
+      Serial.print("GPS error ");
+      print_float(gps_lat, TinyGPS::GPS_INVALID_F_ANGLE, 10, 6);
+      print_float(gps_lon, TinyGPS::GPS_INVALID_F_ANGLE, 11, 6);
+      print_date(gps);
+      Serial.println("\r");
+    }
+*/    
   }
 }
 

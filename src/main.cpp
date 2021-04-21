@@ -16,9 +16,13 @@
 #include "sarray.h"
 #include "soc/timer_group_struct.h"
 #include "soc/timer_group_reg.h"
+//#include <JeVe_EasyOTA.h> 
 
 TaskHandle_t *pvGSMTask;
 TaskHandle_t *pvSarrayTask;
+
+//#define ARDUINO_HOSTNAME "ota-flash-demo"
+//EasyOTA OTA(ARDUINO_HOSTNAME);
 
 //time_t scan_timer;
 
@@ -59,7 +63,7 @@ void setup() {
   gsm_Setup();
 
   //configure the I2C
-  //Wire.begin();
+  Wire.begin();
 
   //configure the GSM modem
   gps_setup();
@@ -96,6 +100,7 @@ void loop() {
     //gyro_loop();
 
     sarray_loop((void *)first_scan);
+
     gps_loop();
     first_scan = false;
     gsm_loop((void *)NULL);

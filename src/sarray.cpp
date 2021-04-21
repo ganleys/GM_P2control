@@ -76,7 +76,7 @@ void sarray_loop(bool parameter){
                     }else{
                         Serial.print("Solar V Error ");Serial.println(err);
                     }
-                    delay(1000);
+                    delay(SAARAY_SCAN_DEKAY);
 
                     err = saary_slv_param_get(slave_array[slave_update_count].address, voltage_reg , &slave_array[slave_update_count].scap);
                     if(err == MSG_OK){
@@ -84,7 +84,7 @@ void sarray_loop(bool parameter){
                     }else{
                         Serial.print("Scap V Error ");Serial.println(err);
                     }      
-                    delay(1000);
+                    delay(SAARAY_SCAN_DEKAY);
 
                     err = saary_slv_param_get(slave_array[slave_update_count].address, battery_reg , &slave_array[slave_update_count].battery);
                     if(err == MSG_OK){
@@ -92,7 +92,7 @@ void sarray_loop(bool parameter){
                     }else{
                         Serial.print("Scap V Error ");Serial.println(err);
                     }             
-                    delay(1000);
+                    delay(SAARAY_SCAN_DEKAY);
 
                     err = saary_slv_param_get(slave_array[slave_update_count].address, temp_reg , &slave_array[slave_update_count].temp);
                     if(err == MSG_OK){
@@ -117,7 +117,7 @@ void sarray_loop(bool parameter){
 
             //calculate the next interval
             repeat_time = minute() + SARRAY_DELAY;
-            if(repeat_time > 60)
+            if(repeat_time >= 60)
                 repeat_time = repeat_time - 60;
 
             Serial.print("sarray next scan at " );
@@ -188,7 +188,7 @@ int8_t sarray_scan(){
 
             delay(1);
 
-        }while(loop_count < 3000);
+        }while(loop_count < 1000);
         
         
         //check the returned message
@@ -371,7 +371,7 @@ int8_t sarray_get_cell_datastr(int8_t cell, JsonObject *jstr){
     tstr["solar"] = slave_array[cell].solar;
     tstr["scap"] = slave_array[cell].scap;
     tstr["batt"] = slave_array[cell].battery;
-    tstr["temp"] = slave_array[cell].temp;
+    tstr["tempc"] = slave_array[cell].temp;
     tstr["update"] = slave_array[cell].updated;
 
     *jstr = tstr.as<JsonObject>();
