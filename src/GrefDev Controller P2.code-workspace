@@ -1,7 +1,11 @@
 {
 	"folders": [
 		{
+			"name": "GM_P2control",
 			"path": ".."
+		},
+		{
+			"path": "..\\..\\..\\..\\..\\..\\DT\\TinyGS\\GS"
 		}
 	],
 	"settings": {}
